@@ -3,7 +3,7 @@
 package segque
 
 type Container interface {
-	// op sequence number
+	// op sequence number is the full bits sequence number.
 	// keys 1 or more are used for selecting container bucket
 	// returns evicted seqnum - 0 is zero value
 	Update(seqnum uint64, key ...uint64) uint64
@@ -83,6 +83,9 @@ func (c *two_barr) Update(seqnum uint64, key ...uint64) uint64 {
 	return arr[idx].Add(seqnum)
 }
 
+// NewContainer creates a new container of specified CType, with allocated FifoQ array(s)
+// as required. Buckets are evenly divided across two arrays for the double array types,
+// with key mask adjusted accordingly.
 func NewContainer(ctype CType, buckets int, slots int, seqmask uint64) Container {
 	var container Container
 
