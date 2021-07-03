@@ -36,7 +36,7 @@ var hashtypes = map[HType]string{
 	GomapHash: "GomapHash",
 }
 
-func NewHashfunc(htype HType) (HashFunc, FuncParam) {
+func NewHashFunc(htype HType) (HashFunc, FuncParam) {
 	var hfunc HashFunc
 	var pfunc FuncParam
 
