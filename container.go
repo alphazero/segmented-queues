@@ -30,9 +30,9 @@ var ctypes = map[CType]string{
 
 /// container base ///////////////////////////////////////////////
 type base struct {
-	mask    uint64
-	seqmask uint64
-	ctype   CType
+	mask    uint64 // mask used to assign key to bucket
+	seqmask uint64 // sequence number mask to emulate rollover
+	ctype   CType  // container type
 }
 
 // type I container - container with one backing array
@@ -41,6 +41,7 @@ type one_barr struct {
 	arr []*FifoQ
 }
 
+// Update supports Container.Update
 func (c *one_barr) Update(seqnum uint64, key ...uint64) uint64 {
 	var idx int
 	switch c.base.ctype {
@@ -74,6 +75,7 @@ type two_barr struct {
 	arr2 []*FifoQ
 }
 
+// Update supports Container.Update
 func (c *two_barr) Update(seqnum uint64, key ...uint64) uint64 {
 	idx1 := int(key[0] & c.mask)
 	idx2 := int(key[1] & c.mask)
