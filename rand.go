@@ -14,6 +14,43 @@ type HashFunc func(b []byte, param interface{}) uint64
 
 type FuncParam func(int) interface{}
 
+type HType int
+
+const (
+	_ HType = iota
+	Blake2b
+	GomapHash
+)
+
+func (t HType) String() string {
+	return hashtypes[t]
+}
+
+type htypeName struct {
+	htype HType
+	name  string
+}
+
+var hashtypes = map[HType]string{
+	Blake2b:   "Blake2b",
+	GomapHash: "GomapHash",
+}
+
+func NewHashfunc(htype HType) (HashFunc, FuncParam) {
+	var hfunc HashFunc
+	var pfunc FuncParam
+
+	switch htype {
+	case Blake2b:
+		hfunc = B2bHash
+		pfunc = B2bParam
+	case GomapHash:
+		hfunc = GmHash
+		pfunc = GmParam
+	}
+	return hfunc, pfunc
+}
+
 /// rand value generators ////////////////////////////////////////
 
 var nonce uint64

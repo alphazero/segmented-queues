@@ -5,7 +5,7 @@ package segque
 type CType int
 
 func (c CType) String() string {
-	return Strategies[c]
+	return ctypes[c]
 }
 
 const (
@@ -18,12 +18,7 @@ const (
 	Co2_II_Rand
 )
 
-type Strategy struct {
-	Ctype CType
-	Name  string
-}
-
-var Strategies = map[CType]string{
+var ctypes = map[CType]string{
 	BA:          "BA",
 	Co2_I_C:     "Co2_I_C",
 	Co2_I_R:     "Co2_I_R",
