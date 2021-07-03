@@ -71,7 +71,7 @@ func B2bHash(b []byte, param interface{}) uint64 {
 	return *(*uint64)(unsafe.Pointer(&h[idx]))
 }
 
-func GmParam(x int) interface{} { return maphash.MakeSeed() }
+func GmParam(ignored int) interface{} { return maphash.MakeSeed() }
 func GmHash(b []byte, param interface{}) uint64 {
 	var seed = param.(maphash.Seed)
 	var h maphash.Hash
