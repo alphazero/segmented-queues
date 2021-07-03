@@ -16,20 +16,13 @@ type FuncParam func(int) interface{}
 
 type HType int
 
+func (t HType) String() string { return hashtypes[t] }
+
 const (
 	_ HType = iota
 	Blake2b
 	GomapHash
 )
-
-func (t HType) String() string {
-	return hashtypes[t]
-}
-
-type htypeName struct {
-	htype HType
-	name  string
-}
 
 var hashtypes = map[HType]string{
 	Blake2b:   "Blake2b",

@@ -2,6 +2,8 @@
 
 package segque
 
+import "fmt"
+
 /// Container types ////////////////////////////////////////////
 type CType int
 
@@ -35,10 +37,18 @@ type base struct {
 	ctype   CType  // container type
 }
 
+func (p *base) String() string {
+	return fmt.Sprintf("type:%s mask:%x seqmask:%x", p.ctype, p.mask, p.seqmask)
+}
+
 // type I container - container with one backing array
 type one_barr struct {
 	base
 	arr []*FifoQ
+}
+
+func (c *one_barr) String() string {
+	return fmt.Sprintf("%s size:%d", c.base.String(), len(c.arr))
 }
 
 // Update supports Container.Update
@@ -73,6 +83,10 @@ type two_barr struct {
 	base
 	arr1 []*FifoQ
 	arr2 []*FifoQ
+}
+
+func (c *two_barr) String() string {
+	return fmt.Sprintf("%s size:%d (x2)", c.base.String(), len(c.arr1))
 }
 
 // Update supports Container.Update
@@ -112,6 +126,8 @@ type Container interface {
 	// keys 1 or more are used for selecting container bucket
 	// returns evicted seqnum - 0 is zero value
 	Update(seqnum uint64, key ...uint64) uint64
+	// container descriptive string
+	String() string
 }
 
 // NewContainer creates a new container of specified CType, with allocated FifoQ array(s)
