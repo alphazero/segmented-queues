@@ -28,22 +28,14 @@ var ctypes = map[CType]string{
 	Co2_II_Rand: "Co2_II_Rand",
 }
 
-/// interface ////////////////////////////////////////////////////
-type Container interface {
-	// op sequence number is the full bits sequence number.
-	// keys 1 or more are used for selecting container bucket
-	// returns evicted seqnum - 0 is zero value
-	Update(seqnum uint64, key ...uint64) uint64
-}
-
-/// basic container //////////////////////////////////////////////
+/// container base ///////////////////////////////////////////////
 type base struct {
 	mask    uint64
 	seqmask uint64
 	ctype   CType
 }
 
-// container with one backing array
+// type I container - container with one backing array
 type one_barr struct {
 	base
 	arr []*FifoQ
@@ -75,7 +67,7 @@ func (c *one_barr) Update(seqnum uint64, key ...uint64) uint64 {
 	return c.arr[idx].Add(seqnum)
 }
 
-// container with two backing arrays
+// type II container - container with two backing arrays
 type two_barr struct {
 	base
 	arr1 []*FifoQ
@@ -108,6 +100,16 @@ func (c *two_barr) Update(seqnum uint64, key ...uint64) uint64 {
 		}
 	}
 	return arr[idx].Add(seqnum)
+}
+
+/// public api ///////////////////////////////////////////////////
+
+// Container defines api for updating a container
+type Container interface {
+	// op sequence number is the full bits sequence number.
+	// keys 1 or more are used for selecting container bucket
+	// returns evicted seqnum - 0 is zero value
+	Update(seqnum uint64, key ...uint64) uint64
 }
 
 // NewContainer creates a new container of specified CType, with allocated FifoQ array(s)
