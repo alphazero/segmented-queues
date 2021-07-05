@@ -18,7 +18,9 @@ const (
 	Co2_I_R           // single array choice of 2 using record sequence number
 	Co2_II_C          // double array choice of 2 using container sequence number
 	Co2_II_R          // double array choice of 2 using record sequence number
-	Co2_II_Rand       // double array choice of 2 with random choice
+	Co2_II_Rand       // double array choice of 2 with random choice // REVU get rid of rand
+	Co3_III_C         // triple array choice of 2 using container sequence number
+	Co3_III_R         // triple array choice of 2 using record sequence number
 )
 
 var ctypes = map[CType]string{
@@ -28,6 +30,8 @@ var ctypes = map[CType]string{
 	Co2_II_C:    "Co2_II_C",
 	Co2_II_R:    "Co2_II_R",
 	Co2_II_Rand: "Co2_II_Rand",
+	Co3_III_C:   "Co3_III_C",
+	Co3_III_R:   "Co3_III_R",
 }
 
 /// container base ///////////////////////////////////////////////
@@ -39,6 +43,14 @@ type base struct {
 
 func (p *base) String() string {
 	return fmt.Sprintf("type:%s mask:%x seqmask:%x", p.ctype, p.mask, p.seqmask)
+}
+
+// REVU consolidate on this ?
+// REVU os simpler to use one array and divide up? 3 will be an issue anyway.
+type n_array struct {
+	base
+	arrs   [][]*FifoQ
+	seqnum uint64
 }
 
 // type I container - container with one backing array
@@ -62,20 +74,28 @@ func (c *one_barr) Update(seqnum uint64, key ...uint64) uint64 {
 		idx = int(key[0] & c.mask)
 	case Co2_I_C:
 		// pick lower container sequence number
-		idx0 := int(key[0] & c.mask)
-		idx1 := int(key[1] & c.mask)
-		idx = idx0
-		if (c.arr[idx0].Seqnum() & c.seqmask) > (c.arr[idx1].Seqnum() & c.seqmask) {
-			idx = idx1
-		}
+		//		idx0 := int(key[0] & c.mask)
+		//		idx1 := int(key[1] & c.mask)
+		//		idx = idx0
+		var idxs = []int{int(key[0] & c.mask), int(key[1] & c.mask)}
+		var seqnums = []uint64{c.arr[idxs[0]].Seqnum(), c.arr[idxs[1]].Seqnum()}
+		pick := PickOldest(c.seqmask, seqnum, seqnums)
+		idx = idxs[pick]
+		//		if (c.arr[idx0].Seqnum() & c.seqmask) > (c.arr[idx1].Seqnum() & c.seqmask) {
+		//			idx = idx1
+		//		}
 	case Co2_I_R:
 		// pick lower record sequence number
-		idx0 := int(key[0] & c.mask)
-		idx1 := int(key[1] & c.mask)
-		idx = idx0
-		if (c.arr[idx0].Tail() & c.seqmask) > (c.arr[idx1].Tail() & c.seqmask) {
-			idx = idx1
-		}
+		//		idx0 := int(key[0] & c.mask)
+		//		idx1 := int(key[1] & c.mask)
+		//		idx = idx0
+		var idxs = []int{int(key[0] & c.mask), int(key[1] & c.mask)}
+		var seqnums = []uint64{c.arr[idxs[0]].Tail(), c.arr[idxs[1]].Tail()}
+		pick := PickOldest(c.seqmask, seqnum, seqnums)
+		idx = idxs[pick]
+		//		if (c.arr[idx0].Tail() & c.seqmask) > (c.arr[idx1].Tail() & c.seqmask) {
+		//			idx = idx1
+		//		}
 	}
 	return c.arr[idx].Add(seqnum)
 }
@@ -109,6 +129,10 @@ func (c *two_barr) Update(seqnum uint64, key ...uint64) uint64 {
 		}
 	case Co2_II_C:
 		// pick lower container sequence number
+		var idxs = []int{int(key[0] & c.mask), int(key[1] & c.mask)}
+		var seqnums = []uint64{c.arr1[idxs[0]].Tail(), c.arr2[idxs[1]].Tail()}
+		pick := PickOldest(c.seqmask, seqnum, seqnums)
+		idx = idxs[pick]
 		if (c.arr1[idx1].Seqnum() & c.seqmask) > (c.arr2[idx2].Seqnum() & c.seqmask) {
 			idx = idx2
 			arr = c.arr2
