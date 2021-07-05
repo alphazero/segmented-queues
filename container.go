@@ -44,7 +44,8 @@ func (p *base) String() string {
 // type I container - container with one backing array
 type one_barr struct {
 	base
-	arr []*FifoQ
+	arr    []*FifoQ
+	seqnum uint64 // REVU use these later when testing seqnum bit lengths
 }
 
 func (c *one_barr) String() string {
@@ -52,6 +53,7 @@ func (c *one_barr) String() string {
 }
 
 // Update supports Container.Update
+// REVU TODO use PickOldest
 func (c *one_barr) Update(seqnum uint64, key ...uint64) uint64 {
 	var idx int
 	switch c.base.ctype {
@@ -81,8 +83,10 @@ func (c *one_barr) Update(seqnum uint64, key ...uint64) uint64 {
 // type II container - container with two backing arrays
 type two_barr struct {
 	base
-	arr1 []*FifoQ
-	arr2 []*FifoQ
+	arr1    []*FifoQ
+	arr2    []*FifoQ
+	seqnum1 uint64
+	seqnum2 uint64
 }
 
 func (c *two_barr) String() string {
@@ -90,6 +94,7 @@ func (c *two_barr) String() string {
 }
 
 // Update supports Container.Update
+// REVU TODO use PickOldest
 func (c *two_barr) Update(seqnum uint64, key ...uint64) uint64 {
 	idx1 := int(key[0] & c.mask)
 	idx2 := int(key[1] & c.mask)
@@ -170,4 +175,33 @@ func NewContainer(ctype CType, buckets int, slots int, seqmask uint64) Container
 		container = &c
 	}
 	return container
+}
+
+/// sequence number algorithm
+
+// pickOldesst applies the seqmask to emulate a mask sized roll-over counter.
+// it also applies the same mask to the array of sequnece numbers provided.
+// the algorithm assumes that any given sequence number is at most one cycle
+// behind the counter. thus, if any of the sequence numbers in the array are
+// greater than the (masked) seqnum, it is assumed they are lagging a cycle
+// behind.
+func PickOldest(seqmask uint64, seqnum uint64, seqnums []uint64) (pickIdx int) {
+	var refnum = seqmask & seqnum
+	var least uint64 = seqmask << 2
+	var cycle = seqmask + 1
+	var idx int
+	for i, v := range seqnums {
+		v0 := v & seqmask
+		// if v0 exceed refnum then it is a value form previous cycle.
+		// so if less add a cycle value to it - this was
+		// we can reasonably compare two seqnums to see which is less
+		if v0 < refnum {
+			v0 += cycle
+		}
+		if v0 < least {
+			least = v0
+			idx = i
+		}
+	}
+	return idx
 }
