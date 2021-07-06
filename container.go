@@ -57,7 +57,7 @@ func (c *one_barr) String() string {
 }
 
 // Update supports Container.Update
-// REVU TODO use PickOldest
+// REVU use PickOldest
 func (c *one_barr) Update(seqnum uint64, key ...uint64) uint64 {
 	var idx int
 	switch c.base.ctype {
@@ -106,7 +106,7 @@ func (c *two_barr) String() string {
 }
 
 // Update supports Container.Update
-// REVU TODO use PickOldest
+// REVU use PickOldest
 func (c *two_barr) Update(seqnum uint64, key ...uint64) uint64 {
 	idx1 := int(key[0] & c.mask)
 	idx2 := int(key[1] & c.mask)
