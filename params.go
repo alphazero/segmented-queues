@@ -35,9 +35,16 @@ func (p *Params) Initialize() {
 	p.Capacity = p.Size * p.Slots
 	p.Memsize = p.Size * p.CLSize / 1024
 }
+
 func (p *Params) Print() {
 	p.Fprint(os.Stdout)
 }
+
+// suggested canonical file name based on distinguishing params
+func (p *Params) Fname() string {
+	return fmt.Sprintf("%s_Clc%d_d%d_s%d_%s", p.Ctype, p.Slots, p.Degree, p.Seqbits, p.Htype)
+}
+
 func (p *Params) Fprint(w io.Writer) {
 	// print p for result output reference
 	fmt.Println(w, "--- test p -----------------------------------------")
