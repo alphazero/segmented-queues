@@ -45,14 +45,6 @@ func (p *base) String() string {
 	return fmt.Sprintf("type:%s mask:%x seqmask:%x", p.ctype, p.mask, p.seqmask)
 }
 
-// REVU consolidate on this ?
-// REVU os simpler to use one array and divide up? 3 will be an issue anyway.
-type n_array struct {
-	base
-	arrs   [][]*FifoQ
-	seqnum uint64
-}
-
 // type I container - container with one backing array
 type one_barr struct {
 	base
