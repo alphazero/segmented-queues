@@ -19,8 +19,8 @@ const (
 	Co2_II_C          // double array choice of 2 using container sequence number
 	Co2_II_R          // double array choice of 2 using record sequence number
 	Co2_II_Rand       // double array choice of 2 with random choice // REVU get rid of rand
-	Co3_III_C         // triple array choice of 2 using container sequence number
-	Co3_III_R         // triple array choice of 2 using record sequence number
+	Co3_IV_C          // quad array choice of 2 using container sequence number
+	Co3_IV_R          // quad array choice of 2 using record sequence number
 )
 
 var ctypes = map[CType]string{
@@ -30,8 +30,8 @@ var ctypes = map[CType]string{
 	Co2_II_C:    "Co2_II_C",
 	Co2_II_R:    "Co2_II_R",
 	Co2_II_Rand: "Co2_II_Rand",
-	Co3_III_C:   "Co3_III_C",
-	Co3_III_R:   "Co3_III_R",
+	Co3_IV_C:    "Co3_IV_C",
+	Co3_IV_R:    "Co3_IV_R",
 }
 
 /// container base ///////////////////////////////////////////////
@@ -58,37 +58,23 @@ func (c *one_barr) String() string {
 
 // Update supports Container.Update
 // REVU use PickOldest
-func (c *one_barr) Update(seqnum uint64, key ...uint64) uint64 {
-	var idx int
-	switch c.base.ctype {
-	case BA:
-		// basic addressing with mask
-		idx = int(key[0] & c.mask)
-	case Co2_I_C:
-		// pick lower container sequence number
-		//		idx0 := int(key[0] & c.mask)
-		//		idx1 := int(key[1] & c.mask)
-		//		idx = idx0
-		var idxs = []int{int(key[0] & c.mask), int(key[1] & c.mask)}
-		var seqnums = []uint64{c.arr[idxs[0]].Seqnum(), c.arr[idxs[1]].Seqnum()}
-		pick := PickOldest(c.seqmask, seqnum, seqnums)
-		idx = idxs[pick]
-		//		if (c.arr[idx0].Seqnum() & c.seqmask) > (c.arr[idx1].Seqnum() & c.seqmask) {
-		//			idx = idx1
-		//		}
-	case Co2_I_R:
-		// pick lower record sequence number
-		//		idx0 := int(key[0] & c.mask)
-		//		idx1 := int(key[1] & c.mask)
-		//		idx = idx0
-		var idxs = []int{int(key[0] & c.mask), int(key[1] & c.mask)}
-		var seqnums = []uint64{c.arr[idxs[0]].Tail(), c.arr[idxs[1]].Tail()}
-		pick := PickOldest(c.seqmask, seqnum, seqnums)
-		idx = idxs[pick]
-		//		if (c.arr[idx0].Tail() & c.seqmask) > (c.arr[idx1].Tail() & c.seqmask) {
-		//			idx = idx1
-		//		}
+func (c *one_barr) Update(p *Params, seqnum uint64, key ...uint64) uint64 {
+	var idxs = []int{int(key[0] & c.mask), int(key[1] & c.mask)}
+	// debug
+	for i := 0; i < len(idxs); i++ {
+		Trace(p, "idx%d: %d => ", i, idxs[i])
+		c.arr[idxs[i]].DebugPrint(p)
 	}
+	var pick = 0 // Used for Basic Addressing
+	switch c.base.ctype {
+	case Co2_I_C:
+		var seqnums = []uint64{c.arr[idxs[0]].Seqnum(), c.arr[idxs[1]].Seqnum()}
+		pick = PickOldest(p, c.seqmask, seqnum, seqnums)
+	case Co2_I_R:
+		var seqnums = []uint64{c.arr[idxs[0]].Tail(), c.arr[idxs[1]].Tail()}
+		pick = PickOldest(p, c.seqmask, seqnum, seqnums)
+	}
+	idx := idxs[pick]
 	return c.arr[idx].Add(seqnum)
 }
 
@@ -107,36 +93,35 @@ func (c *two_barr) String() string {
 
 // Update supports Container.Update
 // REVU use PickOldest
-func (c *two_barr) Update(seqnum uint64, key ...uint64) uint64 {
-	idx1 := int(key[0] & c.mask)
-	idx2 := int(key[1] & c.mask)
-	var idx = idx1   // initial choice
-	var arr = c.arr1 // initial choice
+func (c *two_barr) Update(p *Params, seqnum uint64, key ...uint64) uint64 {
+	var arrs = [][]*FifoQ{c.arr1, c.arr2}
+	var idxs = []int{int(key[0] & c.mask), int(key[1] & c.mask)}
+	// debug
+	for i := 0; i < len(arrs); i++ {
+		Trace(p, "idx%d: %d => ", i, idxs[i])
+		arrs[i][idxs[i]].DebugPrint(p)
+	}
+	var pick = 0
 	switch c.base.ctype {
-	case Co2_II_Rand:
-		// use hi bit to flip a coin
+	case Co2_II_Rand: // use hi bit to flip a coin
 		if 0x8000000000000000&key[1] == 0x8000000000000000 {
-			idx = idx2
-			arr = c.arr2
+			pick = 1
 		}
 	case Co2_II_C:
-		// pick lower container sequence number
-		var idxs = []int{int(key[0] & c.mask), int(key[1] & c.mask)}
-		var seqnums = []uint64{c.arr1[idxs[0]].Tail(), c.arr2[idxs[1]].Tail()}
-		pick := PickOldest(c.seqmask, seqnum, seqnums)
-		idx = idxs[pick]
-		if (c.arr1[idx1].Seqnum() & c.seqmask) > (c.arr2[idx2].Seqnum() & c.seqmask) {
-			idx = idx2
-			arr = c.arr2
-		}
+		var seqnums = []uint64{c.arr1[idxs[0]].Seqnum(), c.arr2[idxs[1]].Seqnum()}
+		pick = PickOldest(p, c.seqmask, seqnum, seqnums)
 	case Co2_II_R:
-		// pick lower record sequence number
-		if (c.arr1[idx1].Tail() & c.seqmask) > (c.arr2[idx2].Tail() & c.seqmask) {
-			idx = idx2
-			arr = c.arr2
-		}
+		var seqnums = []uint64{c.arr1[idxs[0]].Tail(), c.arr2[idxs[1]].Tail()}
+		pick = PickOldest(p, c.seqmask, seqnum, seqnums)
 	}
-	return arr[idx].Add(seqnum)
+	idx := idxs[pick]
+	arr := arrs[pick]
+	ev := arr[idx].Add(seqnum)
+	Trace(p, "evict %x => ", ev)
+	arr[idx].DebugPrint(p)
+	Trace(p, "------------\n")
+	return ev
+	//	return arr[idx].Add(seqnum)
 }
 
 /// public api ///////////////////////////////////////////////////
@@ -146,7 +131,7 @@ type Container interface {
 	// op sequence number is the full bits sequence number.
 	// keys 1 or more are used for selecting container bucket
 	// returns evicted seqnum - 0 is zero value
-	Update(seqnum uint64, key ...uint64) uint64
+	Update(p *Params, seqnum uint64, key ...uint64) uint64
 	// container descriptive string
 	String() string
 }
@@ -201,7 +186,7 @@ func NewContainer(ctype CType, buckets int, slots int, seqmask uint64) Container
 // behind the counter. thus, if any of the sequence numbers in the array are
 // greater than the (masked) seqnum, it is assumed they are lagging a cycle
 // behind.
-func PickOldest(seqmask uint64, seqnum uint64, seqnums []uint64) (pickIdx int) {
+func PickOldest(p *Params, seqmask uint64, seqnum uint64, seqnums []uint64) (pickIdx int) {
 	var refnum = seqmask & seqnum
 	var least uint64 = seqmask << 2
 	var cycle = seqmask + 1
@@ -219,5 +204,6 @@ func PickOldest(seqmask uint64, seqnum uint64, seqnums []uint64) (pickIdx int) {
 			idx = i
 		}
 	}
+	Trace(p, "with mask %x seqnum %x refnum %x pick from %x - picked %x at idx %d\n", seqmask, seqnum, refnum, seqnums, seqnums[idx], idx)
 	return idx
 }

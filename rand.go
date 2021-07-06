@@ -50,7 +50,7 @@ var nonce uint64
 
 // Randu64 returns a random uint64 using the provided hashfunction,
 // the value v, and optional params for the hashfunc.
-func Randu64(hf HashFunc, v int, param interface{}) uint64 {
+func Randu64(hf HashFunc, v uint64, param interface{}) uint64 {
 	nonce++
 	t := time.Now().UnixNano()
 	s := fmt.Sprintf("%016 %016 %016x", t, nonce, v)

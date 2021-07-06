@@ -47,3 +47,7 @@ func (q *FifoQ) Seqnum() uint64 {
 func (q *FifoQ) Tail() uint64 {
 	return q.buf[q.idx].V
 }
+
+func (q *FifoQ) DebugPrint(p *Params) {
+	Trace(p, "%d %x %x\n", q.idx, q.seqnum, q.buf)
+}
