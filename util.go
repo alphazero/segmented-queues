@@ -6,10 +6,26 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"unsafe"
 )
 
 // utility functions //////////////////////////////////////////////////////////
+
+/// sort //////////////////////////////////////////////////////////////////////
+
+func ToSortedArrays(m map[float64]float64) ([]float64, []float64) {
+	keyset := make([]float64, 0, len(m))
+	for k := range m {
+		keyset = append(keyset, k)
+	}
+	sort.Float64s(keyset)
+	valset := make([]float64, len(keyset))
+	for i, k := range keyset {
+		valset[i] = m[k]
+	}
+	return keyset, valset
+}
 
 /// debug and trace emits /////////////////////////////////////////////////////
 var w = os.Stdout // REVU less/more don't work with Stderr

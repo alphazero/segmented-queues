@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gonum/stat"
 	"io"
+	"math"
 )
 
 type Stats struct {
@@ -18,6 +19,11 @@ type Stats struct {
 	geomean            float64
 	variance           float64
 	stddev             float64
+	hprecision         int // value of 2 means histogram values are bucketed by 2 precision float values +/-0.nn
+	histogram          map[float64]int
+	pdist              map[float64]float64
+	maxRx              float64 // histogram bucket with max value
+	maxRy              int     // corresponding number at maxRx
 }
 
 func NewStats(p *Params, size int) *Stats {
@@ -26,6 +32,7 @@ func NewStats(p *Params, size int) *Stats {
 		idx:         0,
 		residencies: make([]int, size),
 		rnorms:      make([]float64, size),
+		hprecision:  2,
 	}
 }
 
@@ -54,6 +61,26 @@ func (s *Stats) Compute() {
 	s.geomean = stat.GeometricMean(s.rnorms, nil)
 	s.variance = stat.Variance(s.rnorms, nil)
 
+	// compute histogram and probability distribution for normalized values per precision
+	s.histogram = make(map[float64]int)
+	fprecision := math.Pow(10., float64(s.hprecision))
+	n := float64(len(s.rnorms)) // total number of data points
+	for _, v0 := range s.rnorms {
+		v := float64(int(v0*fprecision)) / fprecision
+		s.histogram[v]++
+	}
+	s.pdist = make(map[float64]float64)
+	for r, cnt := range s.histogram {
+		s.pdist[r] = float64(cnt) / n
+	}
+
+	// determine max of histogram
+	for x, y := range s.histogram {
+		if s.maxRy < y {
+			s.maxRx = x
+			s.maxRy = y
+		}
+	}
 }
 
 func (s *Stats) Print(w io.Writer) {
@@ -67,4 +94,11 @@ func (s *Stats) Print(w io.Writer) {
 	fmt.Fprintf(w, "early-evicts:   %f\n", float64(s.early)/float64(cnt))
 	fmt.Fprintf(w, "late-evicts:    %f\n", float64(s.late)/float64(cnt))
 
+	// emit histogram / pdistribution
+	buckets, _ := ToSortedArrays(s.pdist)
+	fmt.Fprintf(w, "hist / pdist:\n")
+	for i, bucket := range buckets {
+		fmt.Fprintf(w, "[%03d] %+.2f %7d  p: %f\n", i, bucket, s.histogram[bucket], s.pdist[bucket])
+	}
+	fmt.Fprintf(w, "max @ %+.2f : %d\n", s.maxRx, s.maxRy)
 }
