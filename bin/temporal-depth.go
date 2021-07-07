@@ -3,64 +3,14 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"github.com/alphazero/segque"
 )
 
-// define defaults here
-var p = segque.Params{
-	CLSize:  64,
-	Degree:  10,
-	Seqbits: 17,
-	Slots:   7,
-	Ctype:   segque.Co2_II_R,
-	Htype:   segque.GomapHash,
-	Path:    "data",
-	Verbose: false,
-	Trace:   false,
-}
-
-func init() {
-	var ctype = int(p.Ctype)
-	var htype = int(p.Htype)
-	flag.IntVar(&p.CLSize, "cl", p.CLSize, "cahceline size - does not affect result - only for memsize calcs")
-	flag.IntVar(&p.Degree, "d", p.Degree, "array degree - size is 2^degree")
-	flag.IntVar(&p.Slots, "n", p.Slots, "clc slot count")
-	flag.IntVar(&p.Seqbits, "sb", p.Seqbits, "sequence counter bits")
-	flag.IntVar(&ctype, "ct", ctype, "container type: 1:BA 2:C2-IC 3:C2-IR 4:C2-IIC 5:C2-IIR 6:C2-IIRand ")
-	flag.IntVar(&htype, "ht", htype, "hash type: 1:Blake2b 2:GoMaphash")
-	flag.BoolVar(&p.Verbose, "verbose", p.Verbose, "flag - verbose emits")
-	flag.BoolVar(&p.Trace, "trace", p.Trace, "flag - trace run")
-
-	flag.Parse()
-
-	p.Ctype = segque.CType(ctype)
-	p.Htype = segque.HType(htype)
-
-	p.Initialize()
-	p.DebugPrint()
-}
-
 func main() {
 	fmt.Printf("Salaam Sultan of Love!\n")
-
-	run(&p)
-	readback(&p)
-}
-
-func readback(p *segque.Params) {
-
-	file, r := segque.OpenDataFile(p)
-	defer file.Close()
-
-	for {
-		seqnum := segque.ReadUint64(r)
-		res := segque.ReadInt(r)
-		nres := segque.ReadFloat64(r)
-		fmt.Printf("%d : %d : %f\n", seqnum, res, nres)
-	}
-
+	p := segque.ParseParams()
+	run(p)
 }
 
 func run(p *segque.Params) {

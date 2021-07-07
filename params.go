@@ -3,6 +3,7 @@
 package segque
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -27,6 +28,42 @@ type Params struct {
 	Capacity int    // total capacity is slots * size
 	Memsize  int    // in Kb - array Size * CLSize / 1024 B/Kb
 	Filename string
+}
+
+func ParseParams() *Params {
+	// define defaults here
+	var p = Params{
+		CLSize:  64,
+		Degree:  10,
+		Seqbits: 17,
+		Slots:   7,
+		Ctype:   Co2_II_R,
+		Htype:   GomapHash,
+		Path:    "data",
+		Verbose: false,
+		Trace:   false,
+	}
+
+	var ctype = int(p.Ctype)
+	var htype = int(p.Htype)
+	flag.IntVar(&p.CLSize, "cl", p.CLSize, "cahceline size - does not affect result - only for memsize calcs")
+	flag.IntVar(&p.Degree, "d", p.Degree, "array degree - size is 2^degree")
+	flag.IntVar(&p.Slots, "n", p.Slots, "clc slot count")
+	flag.IntVar(&p.Seqbits, "sb", p.Seqbits, "sequence counter bits")
+	flag.IntVar(&ctype, "ct", ctype, "container type: 1:BA 2:C2-IC 3:C2-IR 4:C2-IIC 5:C2-IIR 6:C2-IIRand ")
+	flag.IntVar(&htype, "ht", htype, "hash type: 1:Blake2b 2:GoMaphash")
+	flag.BoolVar(&p.Verbose, "verbose", p.Verbose, "flag - verbose emits")
+	flag.BoolVar(&p.Trace, "trace", p.Trace, "flag - trace run")
+
+	flag.Parse()
+
+	p.Ctype = CType(ctype)
+	p.Htype = HType(htype)
+
+	p.Initialize()
+	p.DebugPrint()
+
+	return &p
 }
 
 // fully initialize Params based on partially defined (from CL) struct
