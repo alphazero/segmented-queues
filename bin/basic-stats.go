@@ -19,11 +19,13 @@ func run(p *segque.Params) {
 
 	fmt.Printf("size: %d\n", size)
 	var n int = int(size) / 8
+	var stats = segque.NewStats(p, n)
 	for i := 0; i < n; i++ {
 		residency, eof := segque.ReadInt(r)
 		if eof != nil {
 			panic("bug - got EOF!")
 		}
+		stats.Update(residency)
 		fmt.Printf("%d\n", residency)
 	}
 	fmt.Printf("%d %d\n", n, size/8)

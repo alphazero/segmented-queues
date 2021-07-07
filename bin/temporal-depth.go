@@ -43,13 +43,11 @@ func run(p *segque.Params) {
 		}
 
 		if seqnum > warmup && evicted > 0 {
-			r := int(seqnum-evicted) - p.Capacity
-			nr := float64(r) / float64(p.Capacity)
-			segque.Trace(p, "%7d  %+f\n", r, nr)
-
-			segque.WriteUint64(w, seqnum)
-			segque.WriteInt(w, r)
-			segque.WriteFloat64(w, nr)
+			residency := int(seqnum - evicted)
+			if residency < 0 {
+				panic("bug - negative residency value")
+			}
+			segque.WriteInt(w, residency)
 		}
 	}
 	w.Flush()

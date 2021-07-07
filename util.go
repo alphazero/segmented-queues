@@ -46,12 +46,16 @@ func CreateDataFile(p *Params) (*os.File, *bufio.Writer) {
 	}
 	return file, bufio.NewWriter(file)
 }
-func OpenDataFile(p *Params) (*os.File, *bufio.Reader) {
+func OpenDataFile(p *Params) (*os.File, *bufio.Reader, int64) {
 	file, err := os.Open(p.Filename)
 	if err != nil {
 		ExitOnError(err, "OpenDataFile")
 	}
-	return file, bufio.NewReader(file)
+	finfo, err := file.Stat()
+	if err != nil {
+		ExitOnError(err, "OpenDataFile")
+	}
+	return file, bufio.NewReader(file), finfo.Size()
 }
 
 func write(op string, w *bufio.Writer, buf []byte) {
