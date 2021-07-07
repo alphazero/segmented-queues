@@ -27,6 +27,8 @@ type Params struct {
 	Size     int    // array size is 2^degree
 	Capacity int    // total capacity is slots * size
 	Memsize  int    // in Kb - array Size * CLSize / 1024 B/Kb
+	Warmup   uint64 // computed from capacity
+	Runlen   uint64 // fixed at large number for all types
 	Filename string
 }
 
@@ -73,6 +75,8 @@ func (p *Params) Initialize() {
 	p.Seqmask = uint64((1 << p.Seqbits) - 1)
 	p.Capacity = p.Size * p.Slots
 	p.Memsize = p.Size * p.CLSize / 1024
+	p.Warmup = uint64(p.Capacity << 2)
+	p.Runlen = uint64(0x100000) + p.Warmup
 	if p.Path == "" {
 		p.Path = "."
 	}
@@ -90,7 +94,7 @@ func (p *Params) Fname() string {
 
 func (p *Params) Fprint(w io.Writer) {
 	// print p for result output reference
-	Emit(p, "--- test p -----------------------------------------\n")
+	Emit(p, "--- test parameters --------------------------------\n")
 	Emit(p, "cacheline-size  %d\n", p.CLSize)
 	Emit(p, "degree:         %d\n", p.Degree)
 	Emit(p, "seqnumbits:     %d\n", p.Seqbits)
@@ -103,6 +107,8 @@ func (p *Params) Fprint(w io.Writer) {
 	//	Emit(p, "stream length:  %d\n", p.cnt)
 	Emit(p, "hashfunc-type:  %s\n", p.Htype)
 	Emit(p, "container-type: %s\n", p.Ctype)
+	Emit(p, "warmup:         %d\n", p.Warmup)
+	Emit(p, "runlen:         %d\n", p.Runlen)
 	//	Emit(p, "ref-sizes:      %v\n", p.refsizes)
 	//	Emit(p, "ref-caps:       %v\n", p.refcaps)
 	Emit(p, "verbose-flag:   %t\n", p.Verbose)

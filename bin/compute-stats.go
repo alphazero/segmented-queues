@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"github.com/alphazero/segque"
+	"os"
 )
 
 func main() {
@@ -17,7 +18,6 @@ func run(p *segque.Params) {
 	file, r, size := segque.OpenDataFile(p)
 	defer file.Close()
 
-	fmt.Printf("size: %d\n", size)
 	var n int = int(size) / 8
 	var stats = segque.NewStats(p, n)
 	for i := 0; i < n; i++ {
@@ -26,8 +26,7 @@ func run(p *segque.Params) {
 			panic("bug - got EOF!")
 		}
 		stats.Update(residency)
-		fmt.Printf("%d\n", residency)
 	}
-	fmt.Printf("%d %d\n", n, size/8)
-	p.DebugPrint()
+	stats.Compute()
+	stats.Print(os.Stdout)
 }

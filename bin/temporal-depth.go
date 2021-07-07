@@ -21,15 +21,10 @@ func run(p *segque.Params) {
 	segque.Emit(p, "%v %v %v\n", container, hfunc, pfunc)
 	rndparams := []interface{}{pfunc(0), pfunc(1)}
 
-	// TODO these should be cmdline args via flags
-	var warmup = uint64(p.Capacity << 4)
-	var runlen = warmup << 1
-	segque.Emit(p, "warmup: %d runlen: %d\n", warmup, runlen)
-
 	file, w := segque.CreateDataFile(p)
 	defer file.Close()
 
-	for seqnum := uint64(1); seqnum < runlen; seqnum++ {
+	for seqnum := uint64(1); seqnum < p.Runlen; seqnum++ {
 		var evicted uint64
 		switch p.Ctype {
 		case segque.BA:
@@ -42,10 +37,10 @@ func run(p *segque.Params) {
 			evicted = container.Update(p, seqnum, k0, k1)
 		}
 
-		if seqnum > warmup && evicted > 0 {
+		if seqnum > p.Warmup && evicted > 0 {
 			residency := int(seqnum - evicted)
 			if residency < 0 {
-				panic("bug - negative residency value")
+				panic("bug - negative residency value - warmup too short!")
 			}
 			segque.WriteInt(w, residency)
 		}
