@@ -10,14 +10,15 @@ import (
 
 type Params struct {
 	// to be provided ------------------------------------
-	CLSize  int   // cacheline size
-	Degree  int   // size is 1 << degree
-	Slots   int   // CLC-n type
-	Seqbits int   // default should be minimally log(size) + 4.
-	Ctype   CType // container type
-	Htype   HType // hashfunc type
-	Verbose bool  // verbose emits
-	Trace   bool  // trace all actions
+	CLSize  int    // cacheline size
+	Degree  int    // size is 1 << degree
+	Slots   int    // CLC-n type
+	Seqbits int    // default should be minimally log(size) + 4.
+	Ctype   CType  // container type
+	Htype   HType  // hashfunc type
+	Path    string // path to data files
+	Verbose bool   // verbose emits
+	Trace   bool   // trace all actions
 
 	// computed from provided ----------------------------
 	Mask     uint64 // bucket mask is size - 1
@@ -35,6 +36,9 @@ func (p *Params) Initialize() {
 	p.Seqmask = uint64((1 << p.Seqbits) - 1)
 	p.Capacity = p.Size * p.Slots
 	p.Memsize = p.Size * p.CLSize / 1024
+	if p.Path == "" {
+		p.Path = "."
+	}
 	p.Filename = p.Fname()
 }
 
@@ -44,7 +48,7 @@ func (p *Params) DebugPrint() {
 
 // suggested canonical file name based on distinguishing params
 func (p *Params) Fname() string {
-	return fmt.Sprintf("%s_Clc%d_d%d_s%d_%s", p.Ctype, p.Slots, p.Degree, p.Seqbits, p.Htype)
+	return fmt.Sprintf("%s/%s_Clc%d_d%d_s%d_%s.dat", p.Path, p.Ctype, p.Slots, p.Degree, p.Seqbits, p.Htype)
 }
 
 func (p *Params) Fprint(w io.Writer) {

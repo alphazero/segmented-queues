@@ -16,6 +16,7 @@ var p = segque.Params{
 	Slots:   7,
 	Ctype:   segque.Co2_II_R,
 	Htype:   segque.GomapHash,
+	Path:    "data",
 	Verbose: false,
 	Trace:   false,
 }
@@ -45,6 +46,21 @@ func main() {
 	fmt.Printf("Salaam Sultan of Love!\n")
 
 	run(&p)
+	readback(&p)
+}
+
+func readback(p *segque.Params) {
+
+	file, r := segque.OpenDataFile(p)
+	defer file.Close()
+
+	for {
+		seqnum := segque.ReadUint64(r)
+		res := segque.ReadInt(r)
+		nres := segque.ReadFloat64(r)
+		fmt.Printf("%d : %d : %f\n", seqnum, res, nres)
+	}
+
 }
 
 func run(p *segque.Params) {
@@ -54,10 +70,14 @@ func run(p *segque.Params) {
 	hfunc, pfunc := segque.NewHashFunc(p.Htype)
 	segque.Emit(p, "%v %v %v\n", container, hfunc, pfunc)
 	rndparams := []interface{}{pfunc(0), pfunc(1)}
+
 	// TODO these should be cmdline args via flags
 	var warmup = uint64(p.Capacity << 4)
-	var runlen = warmup // << 1
+	var runlen = warmup << 1
 	segque.Emit(p, "warmup: %d runlen: %d\n", warmup, runlen)
+
+	file, w := segque.CreateDataFile(p)
+	defer file.Close()
 
 	for seqnum := uint64(1); seqnum < runlen; seqnum++ {
 		var evicted uint64
@@ -75,9 +95,14 @@ func run(p *segque.Params) {
 		if seqnum > warmup && evicted > 0 {
 			r := int(seqnum-evicted) - p.Capacity
 			nr := float64(r) / float64(p.Capacity)
-			fmt.Printf("%7d  %+f\n", r, nr)
+			segque.Trace(p, "%7d  %+f\n", r, nr)
+
+			segque.WriteUint64(w, seqnum)
+			segque.WriteInt(w, r)
+			segque.WriteFloat64(w, nr)
 		}
 	}
+	w.Flush()
 
 	segque.Trace(p, "run() -- EXIT\n")
 }
