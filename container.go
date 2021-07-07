@@ -12,110 +12,72 @@ func (c CType) String() string {
 }
 
 const (
-	_           CType = iota
-	BA                // basic array with direct addressing
-	Co2_I_C           // single array choice of 2 using container sequence number
-	Co2_I_R           // single array choice of 2 using record sequence number
-	Co2_II_C          // double array choice of 2 using container sequence number
-	Co2_II_R          // double array choice of 2 using record sequence number
-	Co2_II_Rand       // double array choice of 2 with random choice // REVU get rid of rand
-	Co3_IV_C          // quad array choice of 2 using container sequence number
-	Co3_IV_R          // quad array choice of 2 using record sequence number
+	BA       CType = iota // basic array with direct addressing
+	Co2_I_C               // single array choice of 2 using container sequence number
+	Co2_I_R               // single array choice of 2 using record sequence number
+	Co2_II_C              // double array choice of 2 using container sequence number
+	Co2_II_R              // double array choice of 2 using record sequence number
+	Co4_IV_C              // quad array choice of 2 using container sequence number
+	Co4_IV_R              // quad array choice of 2 using record sequence number
 )
 
 var ctypes = map[CType]string{
-	BA:          "BA",
-	Co2_I_C:     "Co2_I_C",
-	Co2_I_R:     "Co2_I_R",
-	Co2_II_C:    "Co2_II_C",
-	Co2_II_R:    "Co2_II_R",
-	Co2_II_Rand: "Co2_II_Rand",
-	Co3_IV_C:    "Co3_IV_C",
-	Co3_IV_R:    "Co3_IV_R",
+	BA:       "BA",
+	Co2_I_C:  "Co2_I_C",
+	Co2_I_R:  "Co2_I_R",
+	Co2_II_C: "Co2_II_C",
+	Co2_II_R: "Co2_II_R",
+	Co4_IV_C: "Co4_IV_C",
+	Co4_IV_R: "Co4_IV_R",
 }
 
-/// container base ///////////////////////////////////////////////
-type base struct {
-	mask    uint64 // mask used to assign key to bucket
-	seqmask uint64 // sequence number mask to emulate rollover
-	ctype   CType  // container type
+/// container container ///////////////////////////////////////////////
+type container struct {
+	ctype    CType // container type
+	capacity int
+	mask     uint64 // mask used to assign key to bucket
+	seqmask  uint64 // sequence number mask to emulate rollover
+	arrcnt   int
+	arr      [][]*FifoQ // backing arrays
+	seqnum   []uint64   // one per backing array
 }
 
-func (p *base) String() string {
-	return fmt.Sprintf("type:%s mask:%x seqmask:%x", p.ctype, p.mask, p.seqmask)
+func (p *container) String() string {
+	return fmt.Sprintf("type:%s mask:%x seqmask:%x capacity:%d", p.ctype, p.mask, p.seqmask, p.capacity)
 }
 
-// type I container - container with one backing array
-type one_barr struct {
-	base
-	arr    []*FifoQ
-	seqnum uint64 // REVU use these later when testing seqnum bit lengths
-}
-
-func (c *one_barr) String() string {
-	return fmt.Sprintf("%s size:%d", c.base.String(), len(c.arr))
-}
+func (p *container) ArrCnt() int { return p.arrcnt }
 
 // Update supports Container.Update
 // REVU use PickOldest
-func (c *one_barr) Update(p *Params, seqnum uint64, key ...uint64) uint64 {
-	var idxs = []int{int(key[0] & c.mask), int(key[1] & c.mask)}
-	// debug
-	for i := 0; i < len(idxs); i++ {
-		Trace(p, "idx%d: %d => ", i, idxs[i])
-		c.arr[idxs[i]].DebugPrint(p)
+func (c *container) Update(p *Params, seqnum uint64, key ...uint64) uint64 {
+	var idxs = make([]int, c.arrcnt)
+	for i := 0; i < c.arrcnt; i++ {
+		idxs[i] = int(key[i] & c.mask)
 	}
-	var pick = 0 // Used for Basic Addressing
-	switch c.base.ctype {
-	case Co2_I_C:
-		var seqnums = []uint64{c.arr[idxs[0]].Seqnum(), c.arr[idxs[1]].Seqnum()}
-		pick = PickOldest(p, c.seqmask, seqnum, seqnums)
-	case Co2_I_R:
-		var seqnums = []uint64{c.arr[idxs[0]].Tail(), c.arr[idxs[1]].Tail()}
-		pick = PickOldest(p, c.seqmask, seqnum, seqnums)
-	}
-	idx := idxs[pick]
-	return c.arr[idx].Add(seqnum)
-}
-
-// type II container - container with two backing arrays
-type two_barr struct {
-	base
-	arr1    []*FifoQ
-	arr2    []*FifoQ
-	seqnum1 uint64
-	seqnum2 uint64
-}
-
-func (c *two_barr) String() string {
-	return fmt.Sprintf("%s size:%d (x2)", c.base.String(), len(c.arr1))
-}
-
-// Update supports Container.Update
-// REVU use PickOldest
-func (c *two_barr) Update(p *Params, seqnum uint64, key ...uint64) uint64 {
-	var arrs = [][]*FifoQ{c.arr1, c.arr2}
-	var idxs = []int{int(key[0] & c.mask), int(key[1] & c.mask)}
 	// debug
-	for i := 0; i < len(arrs); i++ {
+	for i := 0; i < c.arrcnt; i++ {
 		Trace(p, "idx%d: %d => ", i, idxs[i])
-		arrs[i][idxs[i]].DebugPrint(p)
+		c.arr[i][idxs[i]].DebugPrint(p)
 	}
 	var pick = 0
-	switch c.base.ctype {
-	case Co2_II_Rand: // use hi bit to flip a coin
-		if 0x8000000000000000&key[1] == 0x8000000000000000 {
-			pick = 1
+	var seqnums = make([]uint64, c.arrcnt)
+	switch c.ctype {
+	case BA:
+		// NOP - pick is 0 so we are picking idxs[0] as required
+	case Co2_I_C, Co2_II_C, Co4_IV_C:
+		for i := 0; i < c.arrcnt; i++ {
+			seqnums[i] = c.arr[i][idxs[i]].Seqnum()
 		}
-	case Co2_II_C:
-		var seqnums = []uint64{c.arr1[idxs[0]].Seqnum(), c.arr2[idxs[1]].Seqnum()}
 		pick = PickOldest(p, c.seqmask, seqnum, seqnums)
-	case Co2_II_R:
-		var seqnums = []uint64{c.arr1[idxs[0]].Tail(), c.arr2[idxs[1]].Tail()}
+	case Co2_I_R, Co2_II_R, Co4_IV_R:
+		for i := 0; i < c.arrcnt; i++ {
+			seqnums[i] = c.arr[i][idxs[i]].Tail()
+		}
 		pick = PickOldest(p, c.seqmask, seqnum, seqnums)
 	}
 	idx := idxs[pick]
-	arr := arrs[pick]
+	arr := c.arr[pick]
 	ev := arr[idx].Add(seqnum)
 	Trace(p, "evict %x => ", ev)
 	arr[idx].DebugPrint(p)
@@ -128,6 +90,7 @@ func (c *two_barr) Update(p *Params, seqnum uint64, key ...uint64) uint64 {
 
 // Container defines api for updating a container
 type Container interface {
+	ArrCnt() int
 	// op sequence number is the full bits sequence number.
 	// keys 1 or more are used for selecting container bucket
 	// returns evicted seqnum - 0 is zero value
@@ -140,42 +103,34 @@ type Container interface {
 // as required. Buckets are evenly divided across two arrays for the double array types,
 // with key mask adjusted accordingly.
 func NewContainer(ctype CType, buckets int, slots int, seqmask uint64) Container {
-	var container Container
 
+	var arrcnt int
 	switch ctype {
 	case BA, Co2_I_C, Co2_I_R:
-		mask := uint64(buckets - 1)
-		c := one_barr{
-			base: base{
-				mask:    mask,
-				seqmask: seqmask,
-				ctype:   ctype,
-			},
-			arr: make([]*FifoQ, buckets),
-		}
-		for i := 0; i < len(c.arr); i++ {
-			c.arr[i] = NewFifoQ(slots)
-		}
-		container = &c
-	case Co2_II_C, Co2_II_R, Co2_II_Rand:
-		size := buckets / 2
-		mask := uint64(size - 1)
-		c := two_barr{
-			base: base{
-				mask:    mask,
-				seqmask: seqmask,
-				ctype:   ctype,
-			},
-			arr1: make([]*FifoQ, size),
-			arr2: make([]*FifoQ, size),
-		}
-		for i := 0; i < size; i++ {
-			c.arr1[i] = NewFifoQ(slots)
-			c.arr2[i] = NewFifoQ(slots)
-		}
-		container = &c
+		arrcnt = 1
+	case Co2_II_C, Co2_II_R:
+		arrcnt = 2
+	case Co4_IV_C, Co4_IV_R:
+		arrcnt = 4
 	}
-	return container
+	var arrlen = buckets / arrcnt
+	var mask = uint64(arrlen - 1)
+	c := &container{
+		ctype:    ctype,
+		capacity: buckets * slots,
+		mask:     mask,
+		seqmask:  seqmask,
+		arr:      make([][]*FifoQ, arrcnt),
+		seqnum:   make([]uint64, arrcnt),
+		arrcnt:   arrcnt,
+	}
+	for i := 0; i < arrcnt; i++ {
+		c.arr[i] = make([]*FifoQ, arrlen)
+		for j := 0; j < arrlen; j++ {
+			c.arr[i][j] = NewFifoQ(slots)
+		}
+	}
+	return c
 }
 
 /// sequence number algorithm

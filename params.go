@@ -52,7 +52,7 @@ func ParseParams() *Params {
 	flag.IntVar(&p.Degree, "d", p.Degree, "array degree - size is 2^degree")
 	flag.IntVar(&p.Slots, "n", p.Slots, "clc slot count")
 	flag.IntVar(&p.Seqbits, "sb", p.Seqbits, "sequence counter bits")
-	flag.IntVar(&ctype, "ct", ctype, "container type: 1:BA 2:C2-IC 3:C2-IR 4:C2-IIC 5:C2-IIR 6:C2-IIRand ")
+	flag.IntVar(&ctype, "ct", ctype, "container type: 0:BA 1:C2-IC 2:C2-IR 3:C2-IIC 4:C2-IIR 5:C4_IV_C 6:C4_IV_R")
 	flag.IntVar(&htype, "ht", htype, "hash type: 1:Blake2b 2:GoMaphash")
 	flag.BoolVar(&p.Verbose, "verbose", p.Verbose, "flag - verbose emits")
 	flag.BoolVar(&p.Trace, "trace", p.Trace, "flag - trace run")
