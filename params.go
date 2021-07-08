@@ -89,7 +89,13 @@ func (p *Params) DebugPrint() {
 
 // suggested canonical file name based on distinguishing params
 func (p *Params) Fname() string {
-	return fmt.Sprintf("%s/%s_Clc%d_d%d_s%d_%s.dat", p.Path, p.Ctype, p.Slots, p.Degree, p.Seqbits, p.Htype)
+	return fmt.Sprintf("%s/%s.dat", p.Path, p.CanonicalName())
+}
+
+// CanonicalName returns the canonical name identifying the experiment
+// based on the characteristic parameters
+func (p *Params) CanonicalName() string {
+	return fmt.Sprintf("%s_Clc%d_d%d_s%d_%s", p.Ctype, p.Slots, p.Degree, p.Seqbits, p.Htype)
 }
 
 func (p *Params) Fprint(w io.Writer) {
