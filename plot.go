@@ -70,6 +70,10 @@ func SavePlot(p *plot.Plot, pfname string, width, height int) {
 
 func PlotHistogram(params *Params, stats *Stats, hbuckets int) *plot.Plot {
 	var xmin, xmax, ymin, ymax float64
+	return PlotHistogramXY(params, stats, hbuckets, xmin, xmax, ymin, ymax)
+}
+func PlotHistogramXY(params *Params, stats *Stats, hbuckets int, xmin, xmax, ymin, ymax float64) *plot.Plot {
+	//	var xmin, xmax, ymin, ymax float64
 	p := newPlot(xmin, xmax, ymin, ymax)
 
 	pname := params.CanonicalName()

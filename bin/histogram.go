@@ -3,9 +3,29 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/alphazero/segque"
 )
+
+var hparams = struct {
+	width    int
+	height   int
+	hbuckets int
+	plotDir  string
+}{
+	width:    5,
+	height:   5,
+	hbuckets: 100,
+	plotDir:  "plots",
+}
+
+func init() {
+	flag.IntVar(&hparams.width, "width", hparams.width, "plot width")
+	flag.IntVar(&hparams.height, "height", hparams.height, "plot height")
+	flag.IntVar(&hparams.hbuckets, "buckets", hparams.hbuckets, "histogram buckets")
+	flag.StringVar(&hparams.plotDir, "plotdir", hparams.plotDir, "plot file dir")
+}
 
 func main() {
 	fmt.Printf("Salaam Sultan of Love!\n")
@@ -29,13 +49,9 @@ func run(p *segque.Params) {
 	stats.Compute()
 	//	stats.Print(os.Stdout)
 
-	hbuckets := 100
-	plot := segque.PlotHistogram(p, stats, hbuckets)
+	plot := segque.PlotHistogramXY(p, stats, hparams.hbuckets, 0.0, 1.5, 0.0, 70000.0)
 
-	plotDir := "plots"
-	width := 5
-	height := 5
-	fname := fmt.Sprintf("%s/%s", plotDir, p.CanonicalName())
-	segque.SavePlot(plot, fname, width, height)
+	fname := fmt.Sprintf("%s/%s", hparams.plotDir, p.CanonicalName())
+	segque.SavePlot(plot, fname, hparams.width, hparams.height)
 
 }
