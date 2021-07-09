@@ -12,6 +12,8 @@ type Container interface {
 	ArrCnt() int
 	// Returns the choice-of-N arity
 	Choices() int
+	// Returns true if choice uses container sequence num
+	UseCSeqnum() bool
 	// op sequence number is the full bits sequence number.
 	// keys 1 or more are used for selecting container bucket
 	// returns evicted seqnum - 0 is zero value
@@ -75,7 +77,7 @@ func NewContainer(ctype CType, buckets int, slots int, seqmask uint64) Container
 	var useCSeqnum bool
 	switch ctype {
 	case BA:
-		choices = 2
+		choices = 1
 		arrcnt = 1
 	case Co2_I_C:
 		choices = 2
@@ -136,41 +138,19 @@ func (p *container) ArrCnt() int { return p.arrcnt }
 // container.Choices supports Container.Choices()
 func (p *container) Choices() int { return p.choices }
 
+// container.UseCSeqnum supports Container.UseCSeqnum
+func (p *container) UseCSeqnum() bool { return p.useCSeqnum }
+
 // container.Update supports Container.Update()
 func (c *container) Update(p *Params, seqnum uint64, key ...uint64) uint64 {
-	var choices = 1
-	var arrcnt = 1
-	var useCSeqnum bool
-	switch c.ctype {
-	case BA:
+	if c.ctype == BA {
 		idx := int(key[0] & c.mask)
 		return c.arr[0][idx].Add(seqnum)
-	case Co2_I_C:
-		choices = 2
-		arrcnt = 1
-		useCSeqnum = true
-	case Co2_I_R:
-		choices = 2
-		arrcnt = 1
-		useCSeqnum = false
-	case Co2_II_C:
-		choices = 2
-		arrcnt = 2
-		useCSeqnum = true
-	case Co2_II_R:
-		choices = 2
-		arrcnt = 2
-		useCSeqnum = false
-	case Co4_IV_C:
-		choices = 4
-		arrcnt = 4
-		useCSeqnum = true
-	case Co4_IV_R:
-		choices = 4
-		arrcnt = 4
-		useCSeqnum = false
 	}
 
+	var choices = c.Choices()
+	var arrcnt = c.ArrCnt()
+	var useCSeqnum = c.UseCSeqnum()
 	var seqnums = make([]uint64, choices)
 	var idxs = make([]int, choices)
 	for i := 0; i < choices; i++ {
