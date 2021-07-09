@@ -17,7 +17,7 @@ var hparams = struct {
 	width:    5,
 	height:   5,
 	hbuckets: 100,
-	plotDir:  "plots",
+	plotDir:  "plot",
 }
 
 func init() {
@@ -49,7 +49,7 @@ func run(p *segque.Params) {
 	stats.Compute()
 	//	stats.Print(os.Stdout)
 
-	plot := segque.PlotHistogramXY(p, stats, hparams.hbuckets, 0.0, 1.5, 0.0, 70000.0)
+	plot := segque.PlotHistogramXY(p, stats, hparams.hbuckets, -1.000, 3.0, 0.0, 70000.0)
 
 	fname := fmt.Sprintf("%s/%s", hparams.plotDir, p.CanonicalName())
 	segque.SavePlot(plot, fname, hparams.width, hparams.height)

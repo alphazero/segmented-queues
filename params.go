@@ -56,6 +56,7 @@ func ParseParams() *Params {
 	flag.IntVar(&htype, "ht", htype, "hash type: 1:Blake2b 2:GoMaphash")
 	flag.BoolVar(&p.Verbose, "verbose", p.Verbose, "flag - verbose emits")
 	flag.BoolVar(&p.Trace, "trace", p.Trace, "flag - trace run")
+	flag.StringVar(&p.Path, "path", p.Path, "path for data file")
 
 	flag.Parse()
 

@@ -72,12 +72,14 @@ func PlotHistogram(params *Params, stats *Stats, hbuckets int) *plot.Plot {
 	var xmin, xmax, ymin, ymax float64
 	return PlotHistogramXY(params, stats, hbuckets, xmin, xmax, ymin, ymax)
 }
+
+// TODO comparative cache-lines
 func PlotHistogramXY(params *Params, stats *Stats, hbuckets int, xmin, xmax, ymin, ymax float64) *plot.Plot {
 	//	var xmin, xmax, ymin, ymax float64
 	p := newPlot(xmin, xmax, ymin, ymax)
 
 	pname := params.CanonicalName()
-	p.Title.Text = fmt.Sprintf("%s\nμ:%f\nσ:%f", pname, stats.mean, stats.stddev)
+	p.Title.Text = fmt.Sprintf("%s\nμ:%f\nσ:%f\nvar:%f", pname, stats.mean, stats.stddev, stats.variance)
 	p.Title.Padding += vg.Inch * font.Length(0.125)
 
 	v := plotter.Values(stats.rnorms)

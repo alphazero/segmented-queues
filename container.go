@@ -4,7 +4,24 @@ package segque
 
 import "fmt"
 
+/// Container //////////////////////////////////////////////////
+
+// Container defines api for updating a container
+type Container interface {
+	// Returns the number of backing arrays
+	ArrCnt() int
+	// Returns the choice-of-N arity
+	Choices() int
+	// op sequence number is the full bits sequence number.
+	// keys 1 or more are used for selecting container bucket
+	// returns evicted seqnum - 0 is zero value
+	Update(p *Params, seqnum uint64, key ...uint64) uint64
+	// container descriptive string
+	String() string
+}
+
 /// Container types ////////////////////////////////////////////
+
 type CType int
 
 func (c CType) String() string {
@@ -31,72 +48,21 @@ var ctypes = map[CType]string{
 	Co4_IV_R: "Co4_IV_R",
 }
 
-/// container container ///////////////////////////////////////////////
+/// Container support /////////////////////////////////////////////////
+
+// container Container interface for various container configurations
+// and load balancing policies. Capacity, backing array count and n-arry
+// choice policies are all power of 2 based.
 type container struct {
-	ctype    CType // container type
-	capacity int
-	mask     uint64 // mask used to assign key to bucket
-	seqmask  uint64 // sequence number mask to emulate rollover
-	arrcnt   int
-	arr      [][]*FifoQ // backing arrays
-	seqnum   []uint64   // one per backing array
-}
-
-func (p *container) String() string {
-	return fmt.Sprintf("type:%s mask:%x seqmask:%x capacity:%d", p.ctype, p.mask, p.seqmask, p.capacity)
-}
-
-func (p *container) ArrCnt() int { return p.arrcnt }
-
-// Update supports Container.Update
-// REVU use PickOldest
-func (c *container) Update(p *Params, seqnum uint64, key ...uint64) uint64 {
-	var idxs = make([]int, c.arrcnt)
-	for i := 0; i < c.arrcnt; i++ {
-		idxs[i] = int(key[i] & c.mask)
-	}
-	// debug
-	for i := 0; i < c.arrcnt; i++ {
-		Trace(p, "idx%d: %d => ", i, idxs[i])
-		c.arr[i][idxs[i]].DebugPrint(p)
-	}
-	var pick = 0
-	var seqnums = make([]uint64, c.arrcnt)
-	switch c.ctype {
-	case BA:
-		// NOP - pick is 0 so we are picking idxs[0] as required
-	case Co2_I_C, Co2_II_C, Co4_IV_C:
-		for i := 0; i < c.arrcnt; i++ {
-			seqnums[i] = c.arr[i][idxs[i]].Seqnum()
-		}
-		pick = PickOldest(p, c.seqmask, seqnum, seqnums)
-	case Co2_I_R, Co2_II_R, Co4_IV_R:
-		for i := 0; i < c.arrcnt; i++ {
-			seqnums[i] = c.arr[i][idxs[i]].Tail()
-		}
-		pick = PickOldest(p, c.seqmask, seqnum, seqnums)
-	}
-	idx := idxs[pick]
-	arr := c.arr[pick]
-	ev := arr[idx].Add(seqnum)
-	Trace(p, "evict %x => ", ev)
-	arr[idx].DebugPrint(p)
-	Trace(p, "------------\n")
-	return ev
-	//	return arr[idx].Add(seqnum)
-}
-
-/// public api ///////////////////////////////////////////////////
-
-// Container defines api for updating a container
-type Container interface {
-	ArrCnt() int
-	// op sequence number is the full bits sequence number.
-	// keys 1 or more are used for selecting container bucket
-	// returns evicted seqnum - 0 is zero value
-	Update(p *Params, seqnum uint64, key ...uint64) uint64
-	// container descriptive string
-	String() string
+	ctype      CType // container type
+	capacity   int
+	mask       uint64 // mask used to assign key to bucket
+	seqmask    uint64 // sequence number mask to emulate rollover
+	arrcnt     int    // based on ctype
+	choices    int
+	useCSeqnum bool
+	arr        [][]*FifoQ // backing arrays
+	seqnum     []uint64   // one per backing array
 }
 
 // NewContainer creates a new container of specified CType, with allocated FifoQ array(s)
@@ -105,24 +71,50 @@ type Container interface {
 func NewContainer(ctype CType, buckets int, slots int, seqmask uint64) Container {
 
 	var arrcnt int
+	var choices int
+	var useCSeqnum bool
 	switch ctype {
-	case BA, Co2_I_C, Co2_I_R:
+	case BA:
+		choices = 2
 		arrcnt = 1
-	case Co2_II_C, Co2_II_R:
+	case Co2_I_C:
+		choices = 2
+		arrcnt = 1
+		useCSeqnum = true
+	case Co2_I_R:
+		choices = 2
+		arrcnt = 1
+		useCSeqnum = false
+	case Co2_II_C:
+		choices = 2
 		arrcnt = 2
-	case Co4_IV_C, Co4_IV_R:
+		useCSeqnum = true
+	case Co2_II_R:
+		choices = 2
+		arrcnt = 2
+		useCSeqnum = false
+	case Co4_IV_C:
+		choices = 4
 		arrcnt = 4
+		useCSeqnum = true
+	case Co4_IV_R:
+		choices = 4
+		arrcnt = 4
+		useCSeqnum = false
 	}
+
 	var arrlen = buckets / arrcnt
 	var mask = uint64(arrlen - 1)
 	c := &container{
-		ctype:    ctype,
-		capacity: buckets * slots,
-		mask:     mask,
-		seqmask:  seqmask,
-		arr:      make([][]*FifoQ, arrcnt),
-		seqnum:   make([]uint64, arrcnt),
-		arrcnt:   arrcnt,
+		ctype:      ctype,
+		capacity:   buckets * slots,
+		mask:       mask,
+		seqmask:    seqmask,
+		arr:        make([][]*FifoQ, arrcnt),
+		seqnum:     make([]uint64, arrcnt),
+		arrcnt:     arrcnt,
+		choices:    choices,
+		useCSeqnum: useCSeqnum,
 	}
 	for i := 0; i < arrcnt; i++ {
 		c.arr[i] = make([]*FifoQ, arrlen)
@@ -131,6 +123,76 @@ func NewContainer(ctype CType, buckets int, slots int, seqmask uint64) Container
 		}
 	}
 	return c
+}
+
+// container.String supports Container.String()
+func (p *container) String() string {
+	return fmt.Sprintf("type:%s mask:%x seqmask:%x capacity:%d", p.ctype, p.mask, p.seqmask, p.capacity)
+}
+
+// container.ArrCnt supports Container.ArrCnt()
+func (p *container) ArrCnt() int { return p.arrcnt }
+
+// container.Choices supports Container.Choices()
+func (p *container) Choices() int { return p.choices }
+
+// container.Update supports Container.Update()
+func (c *container) Update(p *Params, seqnum uint64, key ...uint64) uint64 {
+	var choices = 1
+	var arrcnt = 1
+	var useCSeqnum bool
+	switch c.ctype {
+	case BA:
+		idx := int(key[0] & c.mask)
+		return c.arr[0][idx].Add(seqnum)
+	case Co2_I_C:
+		choices = 2
+		arrcnt = 1
+		useCSeqnum = true
+	case Co2_I_R:
+		choices = 2
+		arrcnt = 1
+		useCSeqnum = false
+	case Co2_II_C:
+		choices = 2
+		arrcnt = 2
+		useCSeqnum = true
+	case Co2_II_R:
+		choices = 2
+		arrcnt = 2
+		useCSeqnum = false
+	case Co4_IV_C:
+		choices = 4
+		arrcnt = 4
+		useCSeqnum = true
+	case Co4_IV_R:
+		choices = 4
+		arrcnt = 4
+		useCSeqnum = false
+	}
+
+	var seqnums = make([]uint64, choices)
+	var idxs = make([]int, choices)
+	for i := 0; i < choices; i++ {
+		idxs[i] = int(key[i] & c.mask)
+		// arrnum: c2i 0 0 - c2ii 0 1 - c4iv 0 1 2 3
+		arrnum := i % arrcnt
+		if useCSeqnum {
+			seqnums[i] = c.arr[arrnum][idxs[i]].Seqnum()
+		} else {
+			seqnums[i] = c.arr[arrnum][idxs[i]].Tail()
+		}
+	}
+
+	pick := PickOldest(p, c.seqmask, seqnum, seqnums)
+	idx := idxs[pick]
+	arr := c.arr[pick%arrcnt]
+	ev := arr[idx].Add(seqnum)
+	Trace(p, "evict %x => ", ev)
+	arr[idx].DebugPrint(p)
+	Trace(p, "------------\n")
+	return ev
+	//	return arr[idx].Add(seqnum)
 }
 
 /// sequence number algorithm

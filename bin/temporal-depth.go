@@ -20,7 +20,8 @@ func run(p *segque.Params) {
 	hfunc, pfunc := segque.NewHashFunc(p.Htype)
 	segque.Emit(p, "%v %v %v\n", container, hfunc, pfunc)
 
-	rndparams := make([]interface{}, container.ArrCnt())
+	//	rndparams := make([]interface{}, container.ArrCnt())
+	rndparams := make([]interface{}, 4)
 	for i := 0; i < len(rndparams); i++ {
 		rndparams[i] = pfunc(i)
 	}
