@@ -39,8 +39,8 @@ func ParseParams() *Params {
 		Degree:  10,
 		Seqbits: 17,
 		Slots:   7,
-		Ctype:   Co2_II_R,
-		Htype:   GomapHash,
+		Ctype:   C2_A2_R,
+		Htype:   GoMaphash,
 		Path:    "data",
 		Verbose: false,
 		Trace:   false,
@@ -52,8 +52,8 @@ func ParseParams() *Params {
 	flag.IntVar(&p.Degree, "d", p.Degree, "array degree - size is 2^degree")
 	flag.IntVar(&p.Slots, "n", p.Slots, "clc slot count")
 	flag.IntVar(&p.Seqbits, "sb", p.Seqbits, "sequence counter bits")
-	flag.IntVar(&ctype, "ct", ctype, "container type: 0:BA 1:C2-IC 2:C2-IR 3:C2-IIC 4:C2-IIR 5:C4_IV_C 6:C4_IV_R")
-	flag.IntVar(&htype, "ht", htype, "hash type: 1:Blake2b 2:GoMaphash")
+	flag.IntVar(&ctype, "ct", ctype, "container type: 0:BA 1:C2-A1_C 2:C2-A1_R 3:C2-A2_C 4:C2-A2-R 5:C4_A4_C 6:C4_A4_R")
+	flag.IntVar(&htype, "ht", htype, "hash type: 1:Blake2b (b2b)  2:Go-Maphash (gmh)")
 	flag.BoolVar(&p.Verbose, "verbose", p.Verbose, "flag - verbose emits")
 	flag.BoolVar(&p.Trace, "trace", p.Trace, "flag - trace run")
 	flag.StringVar(&p.Path, "path", p.Path, "path for data file")

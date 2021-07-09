@@ -21,12 +21,12 @@ func (t HType) String() string { return hashtypes[t] }
 const (
 	_ HType = iota
 	Blake2b
-	GomapHash
+	GoMaphash
 )
 
 var hashtypes = map[HType]string{
-	Blake2b:   "Blake2b",
-	GomapHash: "GomapHash",
+	Blake2b:   "b2b",
+	GoMaphash: "gmh",
 }
 
 func NewHashFunc(htype HType) (HashFunc, FuncParam) {
@@ -37,7 +37,7 @@ func NewHashFunc(htype HType) (HashFunc, FuncParam) {
 	case Blake2b:
 		hfunc = B2bHash
 		pfunc = B2bParam
-	case GomapHash:
+	case GoMaphash:
 		hfunc = GmHash
 		pfunc = GmParam
 	}
