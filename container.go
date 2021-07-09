@@ -38,6 +38,8 @@ const (
 	C2_A2_R              // double array choice of 2 using record sequence number
 	C4_A4_C              // quad array choice of 2 using container sequence number
 	C4_A4_R              // quad array choice of 2 using record sequence number
+	C8_A8_C              // quad array choice of 2 using container sequence number
+	C8_A8_R              // quad array choice of 2 using record sequence number
 )
 
 var ctypes = map[CType]string{
@@ -48,6 +50,8 @@ var ctypes = map[CType]string{
 	C2_A2_R: "C2_A2_R",
 	C4_A4_C: "C4_A4_C",
 	C4_A4_R: "C4_A4_R",
+	C8_A8_C: "C8_A8_C",
+	C8_A8_R: "C8_A8_R",
 }
 
 /// Container support /////////////////////////////////////////////////
@@ -102,6 +106,14 @@ func NewContainer(ctype CType, buckets int, slots int, seqmask uint64) Container
 	case C4_A4_R:
 		choices = 4
 		arrcnt = 4
+		useCSeqnum = false
+	case C8_A8_C:
+		choices = 8
+		arrcnt = 8
+		useCSeqnum = true
+	case C8_A8_R:
+		choices = 8
+		arrcnt = 8
 		useCSeqnum = false
 	}
 

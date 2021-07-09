@@ -21,7 +21,7 @@ func run(p *segque.Params) {
 	segque.Emit(p, "%v %v %v\n", container, hfunc, pfunc)
 
 	//	rndparams := make([]interface{}, container.ArrCnt())
-	rndparams := make([]interface{}, 4)
+	rndparams := make([]interface{}, 8)
 	for i := 0; i < len(rndparams); i++ {
 		rndparams[i] = pfunc(i)
 	}
@@ -31,7 +31,7 @@ func run(p *segque.Params) {
 
 	for seqnum := uint64(1); seqnum < p.Runlen; seqnum++ {
 		var evicted uint64
-		keys := make([]uint64, 4)
+		keys := make([]uint64, 8)
 		for i := 0; i < len(rndparams); i++ {
 			keys[i] = segque.Randu64(hfunc, seqnum, rndparams[i])
 		}
