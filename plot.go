@@ -9,8 +9,38 @@ import (
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
 	"gonum.org/v1/plot/vg"
-	//	"gonum.org/v1/plot/vg/draw"
+	"gonum.org/v1/plot/vg/draw"
 	"image/color"
+)
+
+/// general plot //////////////////////////////////////////////////////////////
+
+var colidx = 0
+var colors = []color.RGBA{
+	color.RGBA{R: 150, G: 150, B: 150, A: 255},
+	color.RGBA{R: 255, G: 150, B: 150, A: 255},
+	color.RGBA{R: 150, G: 255, B: 150, A: 255},
+	color.RGBA{R: 150, G: 150, B: 255, A: 255},
+	color.RGBA{R: 000, G: 000, B: 000, A: 255},
+}
+
+var (
+	// DefaultLineStyle is the default style for drawing
+	// lines.
+	DefaultLineStyle = draw.LineStyle{
+		Color:    color.Black,
+		Width:    vg.Points(1),
+		Dashes:   []vg.Length{},
+		DashOffs: 0,
+	}
+
+	// DefaultGlyphStyle is the default style used
+	// for gyph marks.
+	DefaultGlyphStyle = draw.GlyphStyle{
+		Color:  color.Black,
+		Radius: vg.Points(2.5),
+		Shape:  draw.RingGlyph{},
+	}
 )
 
 var (
@@ -28,7 +58,7 @@ var (
 	TickFontVariant = font.Variant("Sans")
 )
 
-func newPlot(xmin, xmax, ymin, ymax float64) *plot.Plot {
+func NewPlot(xmin, xmax, ymin, ymax float64) *plot.Plot {
 	p := plot.New()
 	p.X.Min = xmin
 	p.X.Max = xmax
@@ -68,15 +98,59 @@ func SavePlot(p *plot.Plot, pfname string, width, height int) {
 	}
 }
 
-func PlotHistogram(params *Params, stats *Stats, hbuckets int) *plot.Plot {
-	var xmin, xmax, ymin, ymax float64
-	return PlotHistogramXY(params, stats, hbuckets, xmin, xmax, ymin, ymax)
+/// distribution //////////////////////////////////////////////////////////////
+
+type Distribution struct {
+	cnt        int
+	xarr, yarr []float64
+	draw.LineStyle
 }
+
+// NewDistribution returns a Distribution that plots F using
+// the default line style with 50 samples.
+func NewDistribution(stats *Stats) *Distribution {
+	xarr, yarr := ToSortedArrays(stats.pdist)
+	ls := DefaultLineStyle
+	ls.Color = colors[colidx]
+	colidx++
+	return &Distribution{
+		xarr:      xarr,
+		yarr:      yarr,
+		cnt:       len(xarr),
+		LineStyle: ls,
+		//		LineStyle: DefaultLineStyle,
+	}
+}
+
+// Distribution.Plot implements the Plotter interface,
+// drawing a line that connects each point in the Line.
+func (d *Distribution) Plot(canvas draw.Canvas, plot *plot.Plot) {
+	trX, trY := plot.Transforms(&canvas)
+	line := make([]vg.Point, d.cnt)
+
+	for i := range line {
+		x := d.xarr[i]
+		y := d.yarr[i]
+		line[i].X = trX(x)
+		line[i].Y = trY(y)
+	}
+	canvas.StrokeLines(d.LineStyle, canvas.ClipLinesXY(line)...)
+}
+
+// Thumbnail draws a line in the given style down the
+// center of a DrawArea as a thumbnail representation
+// of the LineStyle of the function.
+func (s Distribution) Thumbnail(c *draw.Canvas) {
+	y := c.Center().Y
+	c.StrokeLine2(s.LineStyle, c.Min.X, y, c.Max.X, y)
+}
+
+/// histogram /////////////////////////////////////////////////////////////////
 
 // TODO comparative cache-lines
 func PlotHistogramXY(params *Params, stats *Stats, hbuckets int, xmin, xmax, ymin, ymax float64) *plot.Plot {
 	//	var xmin, xmax, ymin, ymax float64
-	p := newPlot(xmin, xmax, ymin, ymax)
+	p := NewPlot(xmin, xmax, ymin, ymax)
 
 	pname := params.CanonicalName()
 	p.Title.Text = fmt.Sprintf("%s\nμ:%f\nσ:%f\nvar:%f", pname, stats.mean, stats.stddev, stats.variance)
