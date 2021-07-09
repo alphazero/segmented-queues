@@ -77,7 +77,7 @@ func (p *Params) Initialize() {
 	p.Capacity = p.Size * p.Slots
 	p.Memsize = p.Size * p.CLSize / 1024
 	p.Warmup = uint64(p.Capacity << 2)
-	p.Runlen = uint64(0x100000) + p.Warmup
+	p.Runlen = uint64(0x800000) + p.Warmup
 	if p.Path == "" {
 		p.Path = "."
 	}

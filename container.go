@@ -31,23 +31,23 @@ func (c CType) String() string {
 }
 
 const (
-	BA       CType = iota // basic array with direct addressing
-	Co2_I_C               // single array choice of 2 using container sequence number
-	Co2_I_R               // single array choice of 2 using record sequence number
-	Co2_II_C              // double array choice of 2 using container sequence number
-	Co2_II_R              // double array choice of 2 using record sequence number
-	Co4_IV_C              // quad array choice of 2 using container sequence number
-	Co4_IV_R              // quad array choice of 2 using record sequence number
+	BA      CType = iota // basic array with direct addressing
+	C2_A1_C              // single array choice of 2 using container sequence number
+	C2_A1_R              // single array choice of 2 using record sequence number
+	C2_A2_C              // double array choice of 2 using container sequence number
+	C2_A2_R              // double array choice of 2 using record sequence number
+	C4_A4_C              // quad array choice of 2 using container sequence number
+	C4_A4_R              // quad array choice of 2 using record sequence number
 )
 
 var ctypes = map[CType]string{
-	BA:       "BA",
-	Co2_I_C:  "Co2_I_C",
-	Co2_I_R:  "Co2_I_R",
-	Co2_II_C: "Co2_II_C",
-	Co2_II_R: "Co2_II_R",
-	Co4_IV_C: "Co4_IV_C",
-	Co4_IV_R: "Co4_IV_R",
+	BA:      "BA",
+	C2_A1_C: "C2_A1_C",
+	C2_A1_R: "C2_A1_R",
+	C2_A2_C: "C2_A2_C",
+	C2_A2_R: "C2_A2_R",
+	C4_A4_C: "C4_A4_C",
+	C4_A4_R: "C4_A4_R",
 }
 
 /// Container support /////////////////////////////////////////////////
@@ -79,27 +79,27 @@ func NewContainer(ctype CType, buckets int, slots int, seqmask uint64) Container
 	case BA:
 		choices = 1
 		arrcnt = 1
-	case Co2_I_C:
+	case C2_A1_C:
 		choices = 2
 		arrcnt = 1
 		useCSeqnum = true
-	case Co2_I_R:
+	case C2_A1_R:
 		choices = 2
 		arrcnt = 1
 		useCSeqnum = false
-	case Co2_II_C:
+	case C2_A2_C:
 		choices = 2
 		arrcnt = 2
 		useCSeqnum = true
-	case Co2_II_R:
+	case C2_A2_R:
 		choices = 2
 		arrcnt = 2
 		useCSeqnum = false
-	case Co4_IV_C:
+	case C4_A4_C:
 		choices = 4
 		arrcnt = 4
 		useCSeqnum = true
-	case Co4_IV_R:
+	case C4_A4_R:
 		choices = 4
 		arrcnt = 4
 		useCSeqnum = false
