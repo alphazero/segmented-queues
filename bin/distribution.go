@@ -6,7 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/alphazero/segque"
-	//	"math"
+	"math"
 )
 
 var dparams = struct {
@@ -46,13 +46,12 @@ func run(params *segque.Params) {
 	}
 	stats.Compute()
 
-	//	var precision = 2 // REVU TODO export this from stats
-	//	var scale = 2.5
+	var precision = 2 // REVU TODO export this from stats
+	var scale = 2.5
 	//	if !params.Ctype.UseCSeqnum() {
 	//		scale = 4.5
 	//	}
-	//	maxY := scale / math.Pow(10., float64(precision))
-	maxY := 600000.0 // scale / math.Pow(10., float64(precision))
+	maxY := scale / math.Pow(10., float64(precision))
 	plot := segque.NewPlot(-1.0, 3.0, 0, maxY)
 	distribution := segque.NewDistribution(stats)
 	plot.Add(distribution)

@@ -48,7 +48,7 @@ var (
 	TitleFontSize    = font.Length(10)
 	TitlePadding     = vg.Inch * font.Length(0.25)
 	//	TitleXAlign      = text.XAlignment(-0.5)
-	TitleColor = color.RGBA{R: 222, G: 010, B: 111, A: 255}
+	TitleColor = color.Black //RGBA{R: 111, G: 111, B: 111, A: 255}
 
 	LegendFontVariant = font.Variant("Sans")
 	LegendFontSize    = font.Length(9)
@@ -65,6 +65,7 @@ func NewPlot(xmin, xmax, ymin, ymax float64) *plot.Plot {
 	p.Y.Min = ymin
 	p.Y.Max = ymax
 
+	initPlot(p)
 	return p
 }
 
@@ -109,7 +110,7 @@ type Distribution struct {
 // NewDistribution returns a Distribution that plots F using
 // the default line style with 50 samples.
 func NewDistribution(stats *Stats) *Distribution {
-	xarr, yarr := ToSortedArrays(stats.rnorms)
+	xarr, yarr := ToSortedArrays(stats.pdist)
 	ls := DefaultLineStyle
 	ls.Color = colors[colidx]
 	colidx++

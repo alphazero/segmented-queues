@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/gonum/stat"
 	"io"
-	//	"math"
+	"math"
 )
 
 type Stats struct {
@@ -44,10 +44,6 @@ func (s *Stats) Update(r int) {
 
 	// normalize by shifting to 0 for perfect residency and dividing by capacity for comparative analysis
 	s.rnorms[idx] = float64(r-capacity) / float64(capacity)
-	//	if s.rnorms[idx] == 0.0 {
-	//		fmt.Printf("ZERO at r:%d capacity:%d\n", r, capacity)
-	//}
-
 	if r < capacity {
 		s.early++
 	} else if r > capacity {
@@ -66,26 +62,20 @@ func (s *Stats) Compute() {
 
 	// compute histogram and probability distribution for normalized values per precision
 	s.histogram = make(map[float64]int)
-	//	fprecision := math.Pow(10., float64(s.hprecision))
+	fprecision := math.Pow(10., float64(s.hprecision))
 	n := float64(len(s.rnorms)) // total number of data points
 	for _, v0 := range s.rnorms {
 		// BUG here is doubling the 0.0 values since +/- values below the precision
 		//     end up rounded to 0.0. This basically doubles the expected value
 		//     for s.histogram and s.pdist at [0.0] and causes a spike in the dist
 		//     plots.
-		// REVU so solution is basically to ignore precision and just do normalized
-		//      values. Sure, we'll get a lot more than just 100 buckets but at least
-		//      its not fudged?
-		//		v := float64(int(v0*fprecision)) / fprecision
-		v := v0
-		//		if v == 0.0 {
-		//			fmt.Printf("ZERO-2: v:%f v0:%f\n", v, v0)
-		//		}
+		v := float64(int(v0*fprecision)) / fprecision
 		s.histogram[v]++
 	}
 	s.pdist = make(map[float64]float64)
 	for r, cnt := range s.histogram {
 		if r == 0.0 {
+			// BUG HACK is to just ignore the peak at 0.0
 			continue
 		}
 		s.pdist[r] = float64(cnt) / n
