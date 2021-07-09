@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/gonum/stat"
 	"io"
-	"math"
+	//	"math"
 )
 
 type Stats struct {
@@ -66,7 +66,7 @@ func (s *Stats) Compute() {
 
 	// compute histogram and probability distribution for normalized values per precision
 	s.histogram = make(map[float64]int)
-	fprecision := math.Pow(10., float64(s.hprecision))
+	//	fprecision := math.Pow(10., float64(s.hprecision))
 	n := float64(len(s.rnorms)) // total number of data points
 	for _, v0 := range s.rnorms {
 		// BUG here is doubling the 0.0 values since +/- values below the precision
@@ -76,7 +76,8 @@ func (s *Stats) Compute() {
 		// REVU so solution is basically to ignore precision and just do normalized
 		//      values. Sure, we'll get a lot more than just 100 buckets but at least
 		//      its not fudged?
-		v := float64(int(v0*fprecision)) / fprecision
+		//		v := float64(int(v0*fprecision)) / fprecision
+		v := v0
 		//		if v == 0.0 {
 		//			fmt.Printf("ZERO-2: v:%f v0:%f\n", v, v0)
 		//		}

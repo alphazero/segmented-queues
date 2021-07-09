@@ -109,7 +109,7 @@ type Distribution struct {
 // NewDistribution returns a Distribution that plots F using
 // the default line style with 50 samples.
 func NewDistribution(stats *Stats) *Distribution {
-	xarr, yarr := ToSortedArrays(stats.pdist)
+	xarr, yarr := ToSortedArrays(stats.rnorms)
 	ls := DefaultLineStyle
 	ls.Color = colors[colidx]
 	colidx++
