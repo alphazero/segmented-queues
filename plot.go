@@ -7,7 +7,7 @@ import (
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/font"
 	"gonum.org/v1/plot/plotter"
-	//	"gonum.org/v1/plot/plotutil"
+	"gonum.org/v1/plot/plotutil"
 	"gonum.org/v1/plot/vg"
 	//	"gonum.org/v1/plot/vg/draw"
 	"image/color"
@@ -89,7 +89,67 @@ func PlotHistogramXY(params *Params, stats *Stats, hbuckets int, xmin, xmax, ymi
 	}
 	h.Color = color.RGBA{R: 150, G: 150, B: 150, A: 255}
 	h.FillColor = color.RGBA{R: 255, G: 255, B: 255, A: 255}
+	//	hxmin, hxmax, hymin, hymax := h.DataRange()
 	p.Add(h)
 
+	stdlines := stdDevLines(stats, xmin, xmax, ymin, ymax)
+	plotutil.AddLines(p,
+		"μ", stdlines[2],
+		"μ-σ", stdlines[0],
+		"μ-2σ", stdlines[1],
+		//		"μ-3σ", stdlines[2], // DON"T use this
+		"C LRU", lruResLine(params, C_LRU_ENTRY_SIZE, ymax),
+		"Go LRU", lruResLine(params, GO_LRU_ENTRY_SIZE, ymax),
+	)
 	return p
+}
+
+// Adds lines for std-devi (1 and 2) in the early evict side of histogram
+// plus the mean itself.
+func stdDevLines(stats *Stats, xmin, xmax, ymin, ymax float64) []plotter.XYs {
+
+	stdlines := make([]plotter.XYs, 3)
+
+	sd0line := make(plotter.XYs, 2)
+	sd0line[0].X = stats.mean - stats.stddev
+	sd0line[0].Y = 0.0
+	sd0line[1].X = sd0line[0].X
+	sd0line[1].Y = ymax
+
+	sd1line := make(plotter.XYs, 2)
+	sd1line[0].X = stats.mean - (2.0 * stats.stddev)
+	sd1line[0].Y = 0.0
+	sd1line[1].X = sd1line[0].X
+	sd1line[1].Y = ymax
+
+	meanline := make(plotter.XYs, 2)
+	meanline[0].X = stats.mean
+	meanline[0].Y = 0.0
+	meanline[1].X = stats.mean
+	meanline[1].Y = ymax
+
+	stdlines[0] = sd0line
+	stdlines[1] = sd1line
+	stdlines[2] = meanline
+	return stdlines
+}
+
+// An LRU of equivalent memory footprint will have smaller capacity than a CLC LRU.
+// This function computes the normalized residency of a given LRU with a given refsize
+// (in bytes) per entry. A CLC is a cache line, so it is 64 Bytes. Depending on the number
+// of slots per CLC (typically 7 for 64bit keys, and 13 for 32bit keys), and given the
+// reference LRU size, we compute the (constant) normalized residency value for that type.
+// For C 64bit LRUs, we use 40 Bytes. For Go, 56 Bytes, per LRU entry.
+func lruResLine(params *Params, refsize int, ymax float64) plotter.XYs {
+	var clcSize = float64(params.CLSize) / float64(params.Slots) // bytes per entry
+	var rfactor = clcSize / float64(refsize)
+	var rnormal = rfactor - 1.0
+
+	line := make(plotter.XYs, 2)
+	line[0].X = rnormal
+	line[0].Y = 0.0
+	line[1].X = rnormal
+	line[1].Y = ymax
+
+	return line
 }
