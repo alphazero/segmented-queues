@@ -1,0 +1,15 @@
+NOTICE:
+
+This repository uses 3 OSS external libraries:
+
+I - minio blake2b-simd
+minio/blake2b-simd is licensed under the Apache License 2.0
+https://github.com/minio/blake2b-simd/blob/master/LICENSE
+
+II (a) - gonum/gonum
+gonum/gonum is licensed under the BSD 3-Clause "New" or "Revised" License
+https://github.com/gonum/gonum/blob/master/LICENSE
+
+II (b) - gonum/plot
+gonum/plot is licensed under the BSD 3-Clause "New" or "Revised" License
+https://github.com/gonum/plot/blob/master/LICENSE
