@@ -28,7 +28,7 @@ func ToSortedArrays(m map[float64]float64) ([]float64, []float64) {
 }
 
 /// debug and trace emits /////////////////////////////////////////////////////
-var w = os.Stdout // REVU less/more deson't work with Stderr
+var w = os.Stdout // REVU less/more doesn't work with Stderr
 func Trace(p *Params, fmtstr string, v ...interface{}) (int, error) {
 	return emit(p.Trace, p, "TRACE "+fmtstr, v...)
 }
