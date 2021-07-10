@@ -20,8 +20,7 @@ func run(p *segque.Params) {
 	hfunc, pfunc := segque.NewHashFunc(p.Htype)
 	segque.Emit(p, "%v %v %v\n", container, hfunc, pfunc)
 
-	//	rndparams := make([]interface{}, container.ArrCnt())
-	rndparams := make([]interface{}, 8)
+	rndparams := make([]interface{}, 8) // REVU const this 8
 	for i := 0; i < len(rndparams); i++ {
 		rndparams[i] = pfunc(i)
 	}
@@ -36,18 +35,6 @@ func run(p *segque.Params) {
 			keys[i] = segque.Randu64(hfunc, seqnum, rndparams[i])
 		}
 		evicted = container.Update(p, seqnum, keys...)
-		/*
-			switch p.Ctype {
-			case segque.BA:
-				keys[0] = segque.Randu64(hfunc, seqnum, rndparams[0])
-				evicted = container.Update(p, seqnum, keys...)
-			case segque.Co2_I_R, segque.Co2_II_R, segque.Co2_I_C, segque.Co2_II_C:
-			default:
-				k0 := segque.Randu64(hfunc, seqnum, rndparams[0])
-				k1 := segque.Randu64(hfunc, seqnum, rndparams[1])
-				evicted = container.Update(p, seqnum, k0, k1)
-			}
-		*/
 		if seqnum > p.Warmup && evicted > 0 {
 			residency := int(seqnum - evicted)
 			if residency < 0 {

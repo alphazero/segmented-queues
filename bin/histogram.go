@@ -47,11 +47,9 @@ func run(p *segque.Params) {
 		stats.Update(residency)
 	}
 	stats.Compute()
-	//	stats.Print(os.Stdout)
 
 	plot := segque.PlotHistogramXY(p, stats, hparams.hbuckets, -1.000, 3.0, 0.0, 600000.0)
 
 	fname := fmt.Sprintf("%s/%s", hparams.plotDir, p.CanonicalName())
 	segque.SavePlot(plot, fname, hparams.width, hparams.height)
-
 }
