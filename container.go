@@ -36,10 +36,10 @@ const (
 	C2_A1_R              // single array choice of 2 using record sequence number
 	C2_A2_C              // double array choice of 2 using container sequence number
 	C2_A2_R              // double array choice of 2 using record sequence number
-	C4_A4_C              // quad array choice of 2 using container sequence number
-	C4_A4_R              // quad array choice of 2 using record sequence number
-	C8_A8_C              // quad array choice of 2 using container sequence number
-	C8_A8_R              // quad array choice of 2 using record sequence number
+	C4_A4_C              // quad array choice of 4 using container sequence number
+	C4_A4_R              // quad array choice of 4 using record sequence number
+	C8_A8_C              // octal array choice of 8 using container sequence number
+	C8_A8_R              // octal array choice of 8 using record sequence number
 )
 
 var ctypes = map[CType]string{
